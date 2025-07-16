@@ -27,8 +27,9 @@ async function run() {
     await client.connect();
     // Send a ping to confirm a successful connection
 
-    // collectiona
+    // collections
     const classesCollection = client.db("fitifyDB").collection("classes");
+    const usersCollection = client.db("fitifyDB").collection("users");
 
     // Get all classes
     app.get("/classes", async (req, res) => {
@@ -39,6 +40,22 @@ async function run() {
         console.error("Failed to fetch classes:", error);
         res.status(500).send({ message: "Failed to load classes" });
       }
+    });
+
+    // users releted apis.
+    app.post("/users", async (req, res) => {
+      const email = req.body.email;
+
+      const userExists = await usersCollection.findOne({ email });
+
+      if (userExists) {
+        return res
+          .status(200)
+          .send({ message: "user already exists", inserted: false });
+      }
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
