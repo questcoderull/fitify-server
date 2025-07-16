@@ -30,6 +30,7 @@ async function run() {
     // collections
     const classesCollection = client.db("fitifyDB").collection("classes");
     const usersCollection = client.db("fitifyDB").collection("users");
+    const trainesCollection = client.db("fitifyDB").collection("trainers");
 
     // Get all classes
     app.get("/classes", async (req, res) => {
@@ -40,6 +41,12 @@ async function run() {
         console.error("Failed to fetch classes:", error);
         res.status(500).send({ message: "Failed to load classes" });
       }
+    });
+
+    // trainers releted apis.
+    app.get("/trainers", async (req, res) => {
+      const result = await trainesCollection.find().toArray();
+      res.send(result);
     });
 
     // users releted apis.
