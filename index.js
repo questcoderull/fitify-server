@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
@@ -45,8 +45,30 @@ async function run() {
 
     // trainers releted apis.
     app.get("/trainers", async (req, res) => {
-      const result = await trainesCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await trainesCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching trainers:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    app.get("/trainers/:id", async (req, res) => {
+      const id = req.params.id;
+
+      try {
+        const trainer = await trainesCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        if (!trainer) {
+          return res.status(404).send({ message: "Trainer not found" });
+        }
+        res.send(trainer);
+      } catch (error) {
+        console.error("Error fetching trainer:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
     });
 
     // users releted apis.
