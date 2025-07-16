@@ -27,6 +27,20 @@ async function run() {
     await client.connect();
     // Send a ping to confirm a successful connection
 
+    // collectiona
+    const classesCollection = client.db("fitifyDB").collection("classes");
+
+    // Get all classes
+    app.get("/classes", async (req, res) => {
+      try {
+        const result = await classesCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Failed to fetch classes:", error);
+        res.status(500).send({ message: "Failed to load classes" });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
