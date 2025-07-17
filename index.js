@@ -101,23 +101,26 @@ async function run() {
     });
 
     // subscribe releted apis.
+    app.get("/subscribes", async (req, res) => {
+      const result = await subscribesCollection
+        .find()
+        .sort({ subscribed_At: -1 })
+        .toArray();
+      res.send(result);
+    });
+
     app.post("/subscribes", async (req, res) => {
       const { email, name } = req.body;
-
       const existing = await subscribesCollection.findOne({ email });
-
       if (existing) {
         return res.status(400).send({ message: "You are already subscribed!" });
       }
-
       const subscribeData = {
         name,
         email,
         subscribed_At: new Date().toISOString(),
       };
-
       const result = await subscribesCollection.insertOne(subscribeData);
-
       res.send({ success: true, message: "Subscribed successfully!", result });
     });
 
