@@ -43,6 +43,18 @@ async function run() {
       }
     });
 
+    app.post("/class", async (req, res) => {
+      try {
+        const classData = req.body;
+        classData.createdAt = new Date().toISOString();
+        const result = await classesCollection.insertOne(classData);
+        res.send(result);
+      } catch (error) {
+        console.error("Error adding class:", error);
+        res.status(500).send({ error: "Failed to add class" });
+      }
+    });
+
     // trainers releted apis.
     app.get("/trainers", async (req, res) => {
       try {
