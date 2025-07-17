@@ -67,6 +67,55 @@ async function run() {
       }
     });
 
+    app.get("/trainers/approved", async (req, res) => {
+      try {
+        const result = await trainesCollection
+          .find({ application_status: "approved" })
+          .sort({ joined_At: -1 })
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching trainers:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+    // Remove trainer role
+    // app.patch("/trainers/remove-trainer/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id) };
+    //   const update = { $set: { role: "member" } };
+    //   const result = await usersCollection.updateOne(filter, update);
+    //   res.send(result);
+    // });
+
+    app.patch("/trainers/remove-trainer/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const trainer = await trainesCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      if (!trainer?.email) {
+        return res.status(404).send({ message: "Trainer not found" });
+      }
+
+      const userUpdateResult = await usersCollection.updateOne(
+        { email: trainer.email },
+        { $set: { role: "member" } }
+      );
+
+      const trainerUpdateResult = await trainesCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { application_status: "pending" } }
+      );
+
+      res.send({
+        message: "Trainer demoted successfully",
+        userUpdateResult,
+        trainerUpdateResult,
+      });
+    });
+
     app.get("/trainers/:id", async (req, res) => {
       const id = req.params.id;
 
