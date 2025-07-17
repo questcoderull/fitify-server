@@ -31,6 +31,7 @@ async function run() {
     const classesCollection = client.db("fitifyDB").collection("classes");
     const usersCollection = client.db("fitifyDB").collection("users");
     const trainesCollection = client.db("fitifyDB").collection("trainers");
+    const subscribesCollection = client.db("fitifyDB").collection("subscribes");
 
     // Get all classes
     app.get("/classes", async (req, res) => {
@@ -46,7 +47,7 @@ async function run() {
     app.post("/class", async (req, res) => {
       try {
         const classData = req.body;
-        classData.createdAt = new Date().toISOString();
+        classData.created_At = new Date().toISOString();
         const result = await classesCollection.insertOne(classData);
         res.send(result);
       } catch (error) {
@@ -97,6 +98,27 @@ async function run() {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
       res.send(result);
+    });
+
+    // subscribe releted apis.
+    app.post("/subscribes", async (req, res) => {
+      const { email, name } = req.body;
+
+      const existing = await subscribesCollection.findOne({ email });
+
+      if (existing) {
+        return res.status(400).send({ message: "You are already subscribed!" });
+      }
+
+      const subscribeData = {
+        name,
+        email,
+        subscribed_At: new Date().toISOString(),
+      };
+
+      const result = await subscribesCollection.insertOne(subscribeData);
+
+      res.send({ success: true, message: "Subscribed successfully!", result });
     });
 
     await client.db("admin").command({ ping: 1 });
