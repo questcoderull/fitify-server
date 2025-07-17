@@ -30,7 +30,7 @@ async function run() {
     // collections
     const classesCollection = client.db("fitifyDB").collection("classes");
     const usersCollection = client.db("fitifyDB").collection("users");
-    const trainesCollection = client.db("fitifyDB").collection("trainers");
+    const trainersCollection = client.db("fitifyDB").collection("trainers");
     const subscribesCollection = client.db("fitifyDB").collection("subscribes");
 
     // Get all classes
@@ -59,7 +59,7 @@ async function run() {
     // trainers releted apis.
     app.get("/trainers", async (req, res) => {
       try {
-        const result = await trainesCollection.find().toArray();
+        const result = await trainersCollection.find().toArray();
         res.send(result);
       } catch (error) {
         console.error("Error fetching trainers:", error);
@@ -67,9 +67,15 @@ async function run() {
       }
     });
 
+    app.post("/trainers", async (req, res) => {
+      const data = req.body;
+      const result = await trainersCollection.insertOne(data);
+      res.send(result);
+    });
+
     app.get("/trainers/approved", async (req, res) => {
       try {
-        const result = await trainesCollection
+        const result = await trainersCollection
           .find({ application_status: "approved" })
           .sort({ joined_At: -1 })
           .toArray();
@@ -91,7 +97,7 @@ async function run() {
     app.patch("/trainers/remove-trainer/:id", async (req, res) => {
       const id = req.params.id;
 
-      const trainer = await trainesCollection.findOne({
+      const trainer = await trainersCollection.findOne({
         _id: new ObjectId(id),
       });
 
@@ -104,7 +110,7 @@ async function run() {
         { $set: { role: "member" } }
       );
 
-      const trainerUpdateResult = await trainesCollection.updateOne(
+      const trainerUpdateResult = await trainersCollection.updateOne(
         { _id: new ObjectId(id) },
         { $set: { application_status: "pending" } }
       );
@@ -120,7 +126,7 @@ async function run() {
       const id = req.params.id;
 
       try {
-        const trainer = await trainesCollection.findOne({
+        const trainer = await trainersCollection.findOne({
           _id: new ObjectId(id),
         });
         if (!trainer) {
