@@ -172,6 +172,23 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/trainers/reject/:id", async (req, res) => {
+      const id = req.params.id;
+      const { feedback } = req.body;
+
+      const result = await trainersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            application_status: "rejected",
+            rejectionFeedback: feedback,
+          },
+        }
+      );
+
+      res.send(result);
+    });
+
     // users releted apis.
     app.post("/users", async (req, res) => {
       const email = req.body.email;
