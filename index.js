@@ -151,6 +151,27 @@ async function run() {
       }
     });
 
+    app.patch("/trainers/approve/:id", async (req, res) => {
+      const id = req.params.id;
+      const trainer = await trainersCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      if (!trainer)
+        return res.status(404).send({ message: "Trainer not found" });
+
+      await usersCollection.updateOne(
+        { email: trainer.email },
+        { $set: { role: "trainer" } }
+      );
+
+      const result = await trainersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { application_status: "approved" } }
+      );
+
+      res.send(result);
+    });
+
     // users releted apis.
     app.post("/users", async (req, res) => {
       const email = req.body.email;
