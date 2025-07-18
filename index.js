@@ -73,6 +73,18 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/trainers/pending", async (req, res) => {
+      try {
+        const result = await trainersCollection
+          .find({ application_status: "pending" })
+          .sort({ joined_At: -1 })
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
     app.get("/trainers/approved", async (req, res) => {
       try {
         const result = await trainersCollection
