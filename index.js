@@ -155,6 +155,35 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/users/google", async (req, res) => {
+      const { name, email, profilePic } = req.body;
+
+      const userExists = await usersCollection.findOne({ email });
+
+      if (userExists) {
+        const result = await usersCollection.updateOne(
+          { email },
+          { $set: { last_log_in: new Date().toISOString() } }
+        );
+        return res.send({
+          message: "last login updated",
+          updated: true,
+          result,
+        });
+      } else {
+        const newUser = {
+          name: name,
+          email: email,
+          profilePic: profilePic,
+          role: "member",
+          created_at: new Date().toISOString(),
+          last_log_in: new Date().toISOString(),
+        };
+        const result = await usersCollection.insertOne(newUser);
+        return res.send({ message: "user created", created: true, result });
+      }
+    });
+
     app.patch("/users/update-last-login", async (req, res) => {
       const { email, last_log_in } = req.body;
       const filter = { email };
