@@ -155,6 +155,16 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/users/update-last-login", async (req, res) => {
+      const { email, last_log_in } = req.body;
+      const filter = { email };
+      const updateDoc = {
+        $set: { last_log_in },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     // subscribe releted apis.
     app.get("/subscribes", async (req, res) => {
       const result = await subscribesCollection
