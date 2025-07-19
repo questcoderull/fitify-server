@@ -32,6 +32,7 @@ async function run() {
     const usersCollection = client.db("fitifyDB").collection("users");
     const trainersCollection = client.db("fitifyDB").collection("trainers");
     const subscribesCollection = client.db("fitifyDB").collection("subscribes");
+    const forumsCollection = client.db("fitifyDB").collection("forums");
 
     // Get all classes
     app.get("/classes", async (req, res) => {
@@ -205,6 +206,16 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await usersCollection.findOne({ email });
+      if (user) {
+        res.send({ role: user.role });
+      } else {
+        res.status(404).send({ role: "member" });
+      }
+    });
+
     app.post("/users/google", async (req, res) => {
       const { name, email, profilePic } = req.body;
 
@@ -266,6 +277,19 @@ async function run() {
       };
       const result = await subscribesCollection.insertOne(subscribeData);
       res.send({ success: true, message: "Subscribed successfully!", result });
+    });
+
+    // Forum/community releted apis
+
+    app.post("/forums", async (req, res) => {
+      try {
+        const forumData = req.body;
+
+        const result = await forumsCollection.insertOne(forumData);
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ error: "Forum post failed" });
+      }
     });
 
     await client.db("admin").command({ ping: 1 });
