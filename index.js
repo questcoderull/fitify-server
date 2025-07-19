@@ -280,6 +280,13 @@ async function run() {
     });
 
     // Forum/community releted apis
+    app.get("/forums", async (req, res) => {
+      const result = await forumsCollection
+        .find()
+        .sort({ added_At: -1 })
+        .toArray();
+      res.send(result);
+    });
 
     app.post("/forums", async (req, res) => {
       try {
@@ -290,6 +297,45 @@ async function run() {
       } catch (err) {
         res.status(500).send({ error: "Forum post failed" });
       }
+    });
+
+    app.patch("/forums/vote/:id", async (req, res) => {
+      const { email, type } = req.body;
+      const postId = req.params.id;
+
+      const post = await forumsCollection.findOne({
+        _id: new ObjectId(postId),
+      });
+      if (!post) return res.status(404).send({ message: "Post not found" });
+
+      const updateDoc = {};
+
+      // remove
+      if (type === "remove") {
+        updateDoc.$pull = {
+          upVotes: email,
+          downVotes: email,
+        };
+      }
+
+      // upvote
+      else if (type === "up") {
+        updateDoc.$addToSet = { upVotes: email };
+        updateDoc.$pull = { downVotes: email };
+      }
+
+      // downvote
+      else if (type === "down") {
+        updateDoc.$addToSet = { downVotes: email };
+        updateDoc.$pull = { upVotes: email };
+      }
+
+      const result = await forumsCollection.updateOne(
+        { _id: new ObjectId(postId) },
+        updateDoc
+      );
+
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
