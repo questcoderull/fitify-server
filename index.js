@@ -34,6 +34,7 @@ async function run() {
     const subscribesCollection = client.db("fitifyDB").collection("subscribes");
     const forumsCollection = client.db("fitifyDB").collection("forums");
 
+    // Calass releted apis
     // Get all classes
     app.get("/classes", async (req, res) => {
       try {
@@ -42,6 +43,32 @@ async function run() {
       } catch (error) {
         console.error("Failed to fetch classes:", error);
         res.status(500).send({ message: "Failed to load classes" });
+      }
+    });
+
+    app.get("/classes/matching/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+
+        // Get trainer
+        const trainer = await trainersCollection.findOne({ email });
+
+        if (!trainer) {
+          return res.status(404).send({ message: "Trainer not found" });
+        }
+
+        // Get skills (expertise)
+        const expertiseList = trainer.expertise;
+
+        // Find classes that match any expertise
+        const matchedClasses = await classesCollection
+          .find({ category: { $in: expertiseList } })
+          .toArray();
+
+        res.send(matchedClasses);
+      } catch (err) {
+        console.error("Error fetching matched classes:", err);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
@@ -188,6 +215,78 @@ async function run() {
       );
 
       res.send(result);
+    });
+
+    // Get single trainer by email
+    app.get("/trainers-with-email/:email", async (req, res) => {
+      const email = req.params.email;
+      try {
+        const trainer = await trainersCollection.findOne({ email });
+        if (!trainer) {
+          return res.status(404).send({ message: "Trainer not found" });
+        }
+        res.send(trainer);
+      } catch (error) {
+        console.error("Error fetching trainer by email:", error);
+        res.status(500).send({ message: "Server error" });
+      }
+    });
+
+    app.patch("/trainers/add-slot", async (req, res) => {
+      const { email, newSlot } = req.body;
+
+      if (!email || !newSlot) {
+        return res.status(400).send({ message: "Missing data" });
+      }
+
+      try {
+        const trainer = await trainersCollection.findOne({ email });
+
+        if (!trainer) {
+          return res.status(404).send({ message: "Trainer not found" });
+        }
+
+        // পুরানো স্লট গুলো আনো
+        let structuredSlots = trainer.structuredSlots || [];
+
+        // দিনটা খুঁজো
+        const existingDay = structuredSlots.find((s) => s.day === newSlot.day);
+
+        if (existingDay) {
+          // ওই দিনের মধ্যে স্লট লেবেল আছে কিনা দেখো
+          const existingLabel = existingDay.slots.find(
+            (slot) => slot.label === newSlot.slot.label
+          );
+
+          if (existingLabel) {
+            // টাইম গুলো যোগ করো যদি আগে না থাকে
+            newSlot.slot.times.forEach((time) => {
+              if (!existingLabel.times.includes(time)) {
+                existingLabel.times.push(time);
+              }
+            });
+          } else {
+            // নতুন label যোগ করো
+            existingDay.slots.push(newSlot.slot);
+          }
+        } else {
+          // নতুন দিন আর স্লট দুটোই যোগ করো
+          structuredSlots.push({
+            day: newSlot.day,
+            slots: [newSlot.slot],
+          });
+        }
+
+        const result = await trainersCollection.updateOne(
+          { email },
+          { $set: { structuredSlots } }
+        );
+
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Server error" });
+      }
     });
 
     // users releted apis.
