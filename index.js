@@ -49,22 +49,18 @@ async function run() {
     app.get("/classes/matching/:email", async (req, res) => {
       try {
         const email = req.params.email;
-
         // Get trainer
         const trainer = await trainersCollection.findOne({ email });
 
         if (!trainer) {
           return res.status(404).send({ message: "Trainer not found" });
         }
-
         // Get skills (expertise)
         const expertiseList = trainer.expertise;
-
         // Find classes that match any expertise
         const matchedClasses = await classesCollection
           .find({ category: { $in: expertiseList } })
           .toArray();
-
         res.send(matchedClasses);
       } catch (err) {
         console.error("Error fetching matched classes:", err);
@@ -234,30 +230,23 @@ async function run() {
 
     app.patch("/trainers/add-slot", async (req, res) => {
       const { email, newSlot } = req.body;
-
       if (!email || !newSlot) {
         return res.status(400).send({ message: "Missing data" });
       }
-
       try {
         const trainer = await trainersCollection.findOne({ email });
-
         if (!trainer) {
           return res.status(404).send({ message: "Trainer not found" });
         }
-
         // পুরানো স্লট গুলো আনো
         let structuredSlots = trainer.structuredSlots || [];
-
         // দিনটা খুঁজো
         const existingDay = structuredSlots.find((s) => s.day === newSlot.day);
-
         if (existingDay) {
           // ওই দিনের মধ্যে স্লট লেবেল আছে কিনা দেখো
           const existingLabel = existingDay.slots.find(
             (slot) => slot.label === newSlot.slot.label
           );
-
           if (existingLabel) {
             // টাইম গুলো যোগ করো যদি আগে না থাকে
             newSlot.slot.times.forEach((time) => {
@@ -276,12 +265,10 @@ async function run() {
             slots: [newSlot.slot],
           });
         }
-
         const result = await trainersCollection.updateOne(
           { email },
           { $set: { structuredSlots } }
         );
-
         res.send(result);
       } catch (err) {
         console.error(err);
@@ -352,6 +339,24 @@ async function run() {
       };
       const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
+    });
+
+    app.get("/my-application/:email", async (req, res) => {
+      const email = req.params.email;
+
+      try {
+        const result = await trainersCollection
+          .find({
+            email,
+            application_status: { $in: ["pending", "rejected"] },
+          })
+          .toArray();
+
+        res.send(result);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Server Error" });
+      }
     });
 
     // subscribe releted apis.
