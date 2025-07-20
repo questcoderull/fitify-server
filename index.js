@@ -302,6 +302,12 @@ async function run() {
       }
     });
 
+    app.get("/users/profile/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await usersCollection.findOne({ email });
+      res.send(user);
+    });
+
     app.post("/users/google", async (req, res) => {
       const { name, email, profilePic } = req.body;
 
