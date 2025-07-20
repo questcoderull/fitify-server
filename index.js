@@ -308,6 +308,18 @@ async function run() {
       res.send(user);
     });
 
+    app.patch("/user/profile/:email", async (req, res) => {
+      const email = req.params.email;
+      const { name, profilePic } = req.body;
+
+      const result = await usersCollection.updateOne(
+        { email },
+        { $set: { name, profilePic } }
+      );
+
+      res.send(result);
+    });
+
     app.post("/users/google", async (req, res) => {
       const { name, email, profilePic } = req.body;
 
