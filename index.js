@@ -646,6 +646,23 @@ async function run() {
       }
     });
 
+    // ✅ GET /bookings/member/:email
+    app.get("/bookings/member/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+
+        const bookings = await bookingsCollection
+          .find({ memberEmail: email })
+          .sort({ paymentTime: -1 }) // Sort by paymentTime instead of 'date'
+          .toArray();
+
+        res.send(bookings);
+      } catch (error) {
+        console.error("Error fetching member bookings:", error);
+        res.status(500).send({ message: "Server error" });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
