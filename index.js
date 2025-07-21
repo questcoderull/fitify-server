@@ -3,6 +3,8 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
+const stripe = require("stripe")(process.env.PAYMENT_GATEWAY_KEY);
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -458,6 +460,22 @@ async function run() {
       );
 
       res.send(result);
+    });
+
+    //Pyment releted api
+    app.post("/create-payment-intent", async (req, res) => {
+      const feeInCents = req.body.feeInCents;
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: feeInCents, // Amount in cents
+          currency: "usd",
+          payment_method_types: ["card"], // Specify the payment method types
+        });
+
+        res.json({ clientSecret: paymentIntent.client_secret });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
     await client.db("admin").command({ ping: 1 });
