@@ -36,7 +36,7 @@ async function run() {
     const subscribesCollection = client.db("fitifyDB").collection("subscribes");
     const forumsCollection = client.db("fitifyDB").collection("forums");
     const bookingsCollection = client.db("fitifyDB").collection("bookings");
-    const paymentCollection = client.db("fitifyDB").collection("payments");
+    const paymentsCollection = client.db("fitifyDB").collection("payments");
 
     // Calass releted apis
     // Get all classes
@@ -471,6 +471,18 @@ async function run() {
       res.send(result);
     });
 
+    // Get all bookings by trainerId
+    app.get("/bookings/trainer/:trainerId", async (req, res) => {
+      const trainerId = req.params.trainerId;
+      try {
+        const bookings = await bookingsCollection.find({ trainerId }).toArray();
+        res.send(bookings);
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+        res.status(500).send({ message: "Server error" });
+      }
+    });
+
     //Pyment releted apis
     app.post("/create-payment-intent", async (req, res) => {
       const feeInCents = req.body.feeInCents;
@@ -491,7 +503,7 @@ async function run() {
     app.post("/payments", async (req, res) => {
       try {
         const paymentInfo = req.body;
-        const result = await paymentCollection.insertOne(paymentInfo);
+        const result = await paymentsCollection.insertOne(paymentInfo);
         res.send(result);
       } catch (error) {
         res.status(500).send({ message: "Failed to save payment", error });
