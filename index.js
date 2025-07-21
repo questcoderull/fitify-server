@@ -36,6 +36,7 @@ async function run() {
     const subscribesCollection = client.db("fitifyDB").collection("subscribes");
     const forumsCollection = client.db("fitifyDB").collection("forums");
     const bookingsCollection = client.db("fitifyDB").collection("bookings");
+    const paymentCollection = client.db("fitifyDB").collection("payments");
 
     // Calass releted apis
     // Get all classes
@@ -483,6 +484,17 @@ async function run() {
         res.json({ clientSecret: paymentIntent.client_secret });
       } catch (error) {
         res.status(500).json({ error: error.message });
+      }
+    });
+
+    // POST route to save payment info
+    app.post("/payments", async (req, res) => {
+      try {
+        const paymentInfo = req.body;
+        const result = await paymentCollection.insertOne(paymentInfo);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Failed to save payment", error });
       }
     });
 
