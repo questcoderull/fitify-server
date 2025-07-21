@@ -280,6 +280,142 @@ async function run() {
       }
     });
 
+    // DELETE /trainers/:trainerId/slot
+    // body: { day, label, time }
+    // app.delete("/trainers/:trainerId/slot", async (req, res) => {
+    //   const { trainerId } = req.params;
+    //   const { day, label, time } = req.body;
+
+    //   if (!day || !label || !time) {
+    //     return res.status(400).json({ message: "Missing required fields" });
+    //   }
+
+    //   try {
+    //     const trainer = await trainersCollection.findOne({
+    //       _id: new ObjectId(trainerId),
+    //     });
+
+    //     if (!trainer)
+    //       return res.status(404).json({ message: "Trainer not found" });
+
+    //     // Deep copy for manipulation
+    //     const structuredSlots = trainer.structuredSlots || [];
+
+    //     // Find day block
+    //     const dayIndex = structuredSlots.findIndex((d) => d.day === day);
+    //     if (dayIndex === -1)
+    //       return res.status(404).json({ message: "Day not found" });
+
+    //     // Find slot with label
+    //     const slotIndex = structuredSlots[dayIndex].slots.findIndex(
+    //       (s) => s.label === label
+    //     );
+    //     if (slotIndex === -1)
+    //       return res.status(404).json({ message: "Slot label not found" });
+
+    //     // Remove the time from times array
+    //     const timesArr = structuredSlots[dayIndex].slots[slotIndex].times;
+    //     const timeIndex = timesArr.indexOf(time);
+    //     if (timeIndex === -1)
+    //       return res.status(404).json({ message: "Time not found" });
+
+    //     timesArr.splice(timeIndex, 1);
+
+    //     // If times array is empty, remove slot
+    //     if (timesArr.length === 0) {
+    //       structuredSlots[dayIndex].slots.splice(slotIndex, 1);
+    //     }
+
+    //     // If slots array is empty for that day, remove day block
+    //     if (structuredSlots[dayIndex].slots.length === 0) {
+    //       structuredSlots.splice(dayIndex, 1);
+    //     }
+
+    //     // Update trainer document
+    //     await trainersCollection.updateOne(
+    //       { _id: new ObjectId(trainerId) },
+    //       { $set: { structuredSlots } }
+    //     );
+
+    //     return res.json({ message: "Slot deleted successfully" });
+    //   } catch (error) {
+    //     console.error("Error deleting slot:", error);
+    //     return res.status(500).json({ message: "Server error" });
+    //   }
+    // });
+
+    app.delete("/trainers/:trainerId/slot", async (req, res) => {
+      const { trainerId } = req.params;
+      const { day, label, time } = req.body;
+
+      if (!day || !label || !time) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      try {
+        const trainer = await trainersCollection.findOne({
+          _id: new ObjectId(trainerId),
+        });
+        if (!trainer) {
+          return res.status(404).json({ message: "Trainer not found" });
+        }
+
+        const structuredSlots = trainer.structuredSlots || [];
+
+        // Find the day block
+        const dayBlockIndex = structuredSlots.findIndex(
+          (block) => block.day === day
+        );
+        if (dayBlockIndex === -1) {
+          return res.status(404).json({ message: "Day not found" });
+        }
+
+        // Find the slot group by label
+        const slotIndex = structuredSlots[dayBlockIndex].slots.findIndex(
+          (slot) => slot.label === label
+        );
+        if (slotIndex === -1) {
+          return res.status(404).json({ message: "Slot label not found" });
+        }
+
+        // Find the time index in that slot
+        const timeIndex =
+          structuredSlots[dayBlockIndex].slots[slotIndex].times.indexOf(time);
+        if (timeIndex === -1) {
+          return res.status(404).json({ message: "Time not found" });
+        }
+
+        // Remove the specific time from times array
+        structuredSlots[dayBlockIndex].slots[slotIndex].times.splice(
+          timeIndex,
+          1
+        );
+
+        // If no more times in this slot, remove the entire slot
+        if (
+          structuredSlots[dayBlockIndex].slots[slotIndex].times.length === 0
+        ) {
+          structuredSlots[dayBlockIndex].slots.splice(slotIndex, 1);
+        }
+
+        // If no more slots on this day, remove the day block
+        if (structuredSlots[dayBlockIndex].slots.length === 0) {
+          structuredSlots.splice(dayBlockIndex, 1);
+        }
+
+        // Update the trainer document in DB
+        await trainersCollection.updateOne(
+          { _id: new ObjectId(trainerId) },
+          { $set: { structuredSlots } }
+        );
+
+        res.json({ message: "Slot deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting slot:", error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
     // users releted apis.
     app.post("/users", async (req, res) => {
       const email = req.body.email;
