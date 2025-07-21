@@ -35,6 +35,7 @@ async function run() {
     const trainersCollection = client.db("fitifyDB").collection("trainers");
     const subscribesCollection = client.db("fitifyDB").collection("subscribes");
     const forumsCollection = client.db("fitifyDB").collection("forums");
+    const bookingsCollection = client.db("fitifyDB").collection("bookings");
 
     // Calass releted apis
     // Get all classes
@@ -462,7 +463,14 @@ async function run() {
       res.send(result);
     });
 
-    //Pyment releted api
+    //booking  relted apis
+    app.post("/bookings", async (req, res) => {
+      const bookingData = req.body;
+      const result = await bookingsCollection.insertOne(bookingData);
+      res.send(result);
+    });
+
+    //Pyment releted apis
     app.post("/create-payment-intent", async (req, res) => {
       const feeInCents = req.body.feeInCents;
       try {
