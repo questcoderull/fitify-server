@@ -713,6 +713,15 @@ async function run() {
     });
 
     // review releted api.
+
+    app.get("/review", async (req, res) => {
+      const result = await reviewCollection
+        .find()
+        .sort({ reviwed_at: -1 })
+        .toArray();
+      res.send(result);
+    });
+
     app.post("/review", async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review);
