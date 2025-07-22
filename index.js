@@ -418,6 +418,15 @@ async function run() {
     });
 
     // users releted apis.
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection
+        .find()
+        .sort({ created_at: -1 })
+        .toArray();
+
+      res.send(result);
+    });
+
     app.post("/users", async (req, res) => {
       const email = req.body.email;
 
