@@ -539,12 +539,31 @@ async function run() {
 
     // Remove admin
     app.patch("/users/remove-admin/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await usersCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { role: "member" } }
-      );
-      res.send(result);
+      try {
+        const targetId = req.params.id;
+        const requesterEmail = req.user.email;
+        const requester = await usersCollection.findOne(
+          { email: requesterEmail },
+          { projection: { isMainAdmin: 1 } }
+        );
+        if (!requester || requester.isMainAdmin !== true) {
+          return res.status(403).send({
+            success: false,
+            message: "You can't remove this admin. You are not the main admin.",
+          });
+        }
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(targetId) },
+          { $set: { role: "member" } }
+        );
+
+        res.send({ success: true, result });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: "Server error while removing admin",
+        });
+      }
     });
 
     // subscribe releted apis.
