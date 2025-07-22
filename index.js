@@ -527,6 +527,26 @@ async function run() {
       }
     });
 
+    // Make admin
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role: "admin" } }
+      );
+      res.send(result);
+    });
+
+    // Remove admin
+    app.patch("/users/remove-admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role: "member" } }
+      );
+      res.send(result);
+    });
+
     // subscribe releted apis.
     app.get("/subscribes", async (req, res) => {
       const result = await subscribesCollection
