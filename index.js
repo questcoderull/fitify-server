@@ -37,6 +37,7 @@ async function run() {
     const forumsCollection = client.db("fitifyDB").collection("forums");
     const bookingsCollection = client.db("fitifyDB").collection("bookings");
     const paymentsCollection = client.db("fitifyDB").collection("payments");
+    const reviewCollection = client.db("fitifyDB").collection("review");
 
     // Calass releted apis
     // Get all classes
@@ -646,14 +647,14 @@ async function run() {
       }
     });
 
-    // ✅ GET /bookings/member/:email
+    // GET /bookings/member/:email
     app.get("/bookings/member/:email", async (req, res) => {
       try {
         const email = req.params.email;
 
         const bookings = await bookingsCollection
           .find({ memberEmail: email })
-          .sort({ paymentTime: -1 }) // Sort by paymentTime instead of 'date'
+          .sort({ paymentTime: -1 })
           .toArray();
 
         res.send(bookings);
@@ -661,6 +662,13 @@ async function run() {
         console.error("Error fetching member bookings:", error);
         res.status(500).send({ message: "Server error" });
       }
+    });
+
+    // review releted api.
+    app.post("/review", async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
