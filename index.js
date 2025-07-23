@@ -51,7 +51,6 @@ async function run() {
     // custom middlewares
     const verifyFBToken = async (req, res, next) => {
       const authoHeader = req.headers.authorization;
-
       if (!authoHeader) {
         return res.status(401).send({ message: "unauthorized access" });
       }
@@ -60,7 +59,6 @@ async function run() {
       if (!token) {
         return res.status(401).send({ message: "unauthorized access" });
       }
-
       // now verifiying token (r ei jonno ekhon firebase admin sdk install korthe hobe)
       try {
         const decoded = await admin.auth().verifyIdToken(token);
@@ -69,6 +67,16 @@ async function run() {
       } catch (error) {
         return res.status(403).send({ message: "forbidden access" });
       }
+    };
+
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      if (!user || user.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
     };
 
     // Class releted apis
@@ -205,30 +213,40 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/trainers/pending", async (req, res) => {
-      try {
-        const result = await trainersCollection
-          .find({ application_status: "pending" })
-          .sort({ joined_At: -1 })
-          .toArray();
-        res.send(result);
-      } catch (error) {
-        res.status(500).send({ message: "Internal server error" });
+    app.get(
+      "/trainers/pending",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const result = await trainersCollection
+            .find({ application_status: "pending" })
+            .sort({ joined_At: -1 })
+            .toArray();
+          res.send(result);
+        } catch (error) {
+          res.status(500).send({ message: "Internal server error" });
+        }
       }
-    });
+    );
 
-    app.get("/trainers/approved", async (req, res) => {
-      try {
-        const result = await trainersCollection
-          .find({ application_status: "approved" })
-          .sort({ joined_At: -1 })
-          .toArray();
-        res.send(result);
-      } catch (error) {
-        console.error("Error fetching trainers:", error);
-        res.status(500).send({ message: "Internal server error" });
+    app.get(
+      "/trainers/approved",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const result = await trainersCollection
+            .find({ application_status: "approved" })
+            .sort({ joined_At: -1 })
+            .toArray();
+          res.send(result);
+        } catch (error) {
+          console.error("Error fetching trainers:", error);
+          res.status(500).send({ message: "Internal server error" });
+        }
       }
-    });
+    );
     // Remove trainer role
     // app.patch("/trainers/remove-trainer/:id", async (req, res) => {
     //   const id = req.params.id;
@@ -521,7 +539,7 @@ async function run() {
     });
 
     // users releted apis.
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyFBToken, verifyAdmin, async (req, res) => {
       const result = await usersCollection
         .find()
         .sort({ created_at: -1 })
@@ -545,6 +563,7 @@ async function run() {
       res.send(result);
     });
 
+    // for getting user's role
     app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
       const user = await usersCollection.findOne({ email });
@@ -555,8 +574,13 @@ async function run() {
       }
     });
 
-    app.get("/users/profile/:email", async (req, res) => {
+    app.get("/users/profile/:email", verifyFBToken, async (req, res) => {
       const email = req.params.email;
+      //checking the requiester is you,
+      if (req.decoded.email !== email) {
+        return res.status(43).send({ message: "forbidden access" });
+      }
+
       const user = await usersCollection.findOne({ email });
       res.send(user);
     });
@@ -670,7 +694,7 @@ async function run() {
     });
 
     // subscribe releted apis.
-    app.get("/subscribes", verifyFBToken, async (req, res) => {
+    app.get("/subscribes", verifyFBToken, verifyAdmin, async (req, res) => {
       const result = await subscribesCollection
         .find()
         .sort({ subscribed_At: -1 })
