@@ -95,6 +95,14 @@ async function run() {
       }
     });
 
+    app.get("/classes/:id", async (req, res) => {
+      const classId = req.params.id;
+      const singleClass = await classesCollection.findOne({
+        _id: new ObjectId(classId),
+      });
+      res.send(singleClass);
+    });
+
     app.post("/class", async (req, res) => {
       try {
         const classData = req.body;
