@@ -96,6 +96,37 @@ async function run() {
       }
     });
 
+    // for pagination.
+    app.get("/trainers-with-paginaton", async (req, res) => {
+      try {
+        const page = parseInt(req.query.page) || 1; // page nuber will come from frontend
+        const limit = parseInt(req.query.limit) || 10; // how many  trainer will i show per page.
+        const skip = (page - 1) * limit; //skipping data based on page number.
+
+        const result = await trainersCollection
+          .find()
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        const total = await trainersCollection.estimatedDocumentCount();
+
+        res.send({
+          result, // showing this in frontend.
+          total, // toatl trainer count showing in frontend for pagination
+        });
+      } catch (error) {
+        console.error("Error fetching trainers:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    // pagination er jonno video dekhe likhechilam. jhonkar bhai korechilen.
+    // app.get("/traineraCount", async (req, res) => {
+    //   const count = trainersCollection.estimatedDocumentCount();
+    //   res.send({ count });
+    // });
+
     app.post("/trainers", async (req, res) => {
       const data = req.body;
       const result = await trainersCollection.insertOne(data);
