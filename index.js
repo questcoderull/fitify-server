@@ -51,6 +51,28 @@ async function run() {
       }
     });
 
+    //get api for pagination
+    app.get("/classes-with-pagination", async (req, res) => {
+      try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
+        const skip = (page - 1) * limit;
+
+        const result = await classesCollection
+          .find()
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        const total = await classesCollection.estimatedDocumentCount();
+
+        res.send({ result, total });
+      } catch (error) {
+        console.error("Failed to fetch classes:", error);
+        res.status(500).send({ message: "Failed to load classes" });
+      }
+    });
+
     app.get("/classes/matching/:email", async (req, res) => {
       try {
         const email = req.params.email;
