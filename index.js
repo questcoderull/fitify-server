@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
+const admin = require("firebase-admin");
+
 require("dotenv").config();
 
 const stripe = require("stripe")(process.env.PAYMENT_GATEWAY_KEY);
@@ -11,6 +14,12 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+var serviceAccount = require("./firebase-admin-key.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nmolcz4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -38,6 +47,29 @@ async function run() {
     const bookingsCollection = client.db("fitifyDB").collection("bookings");
     const paymentsCollection = client.db("fitifyDB").collection("payments");
     const reviewCollection = client.db("fitifyDB").collection("review");
+
+    // custom middlewares
+    const verifyFBToken = async (req, res, next) => {
+      const authoHeader = req.headers.authorization;
+
+      if (!authoHeader) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const token = authoHeader.split(" ")[1];
+      // console.log("toke token token", token);
+      if (!token) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+
+      // now verifiying token (r ei jonno ekhon firebase admin sdk install korthe hobe)
+      try {
+        const decoded = await admin.auth().verifyIdToken(token);
+        req.decoded = decoded;
+        next();
+      } catch (error) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+    };
 
     // Class releted apis
     // Get all classes
@@ -638,7 +670,7 @@ async function run() {
     });
 
     // subscribe releted apis.
-    app.get("/subscribes", async (req, res) => {
+    app.get("/subscribes", verifyFBToken, async (req, res) => {
       const result = await subscribesCollection
         .find()
         .sort({ subscribed_At: -1 })
