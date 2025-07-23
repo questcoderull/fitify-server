@@ -39,7 +39,7 @@ async function run() {
     const paymentsCollection = client.db("fitifyDB").collection("payments");
     const reviewCollection = client.db("fitifyDB").collection("review");
 
-    // Calass releted apis
+    // Class releted apis
     // Get all classes
     app.get("/classes", async (req, res) => {
       try {
@@ -105,6 +105,16 @@ async function run() {
         console.error("Error adding class:", error);
         res.status(500).send({ error: "Failed to add class" });
       }
+    });
+
+    // PATCH /classes/increase-booked/:id
+    app.patch("/classes/increase-booked/:id", async (req, res) => {
+      const classId = req.params.id;
+      const result = await classesCollection.updateOne(
+        { _id: new ObjectId(classId) },
+        { $inc: { bookedCount: 1 } }
+      );
+      res.send(result);
     });
 
     // trainers releted apis.
