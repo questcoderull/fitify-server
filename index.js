@@ -822,10 +822,12 @@ async function run() {
     });
 
     // GET /bookings/member/:email
-    app.get("/bookings/member/:email", async (req, res) => {
+    app.get("/bookings/member/:email", verifyFBToken, async (req, res) => {
       try {
         const email = req.params.email;
-
+        if (req.decoded.email !== email) {
+          return res.status(43).send({ message: "forbidden access" });
+        }
         const bookings = await bookingsCollection
           .find({ memberEmail: email })
           .sort({ paymentTime: -1 })
