@@ -652,6 +652,29 @@ async function run() {
       res.send(result);
     });
 
+    //for paignation.
+    app.get("/forums-with-pagination", async (req, res) => {
+      try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const result = await forumsCollection
+          .find()
+          .sort({ added_At: -1 }) // latest forum first
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        const total = await forumsCollection.estimatedDocumentCount();
+
+        res.send({ result, total });
+      } catch (error) {
+        console.error("Failed to fetch forums:", error);
+        res.status(500).send({ message: "Failed to load forums" });
+      }
+    });
+
     app.post("/forums", async (req, res) => {
       try {
         const forumData = req.body;
