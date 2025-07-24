@@ -750,6 +750,35 @@ async function run() {
       res.send(result);
     });
 
+    app.get(
+      "/admin/subscriber-vs-paid",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const subscribersCount =
+            await subscribesCollection.estimatedDocumentCount();
+
+          const allBookings = await bookingsCollection
+            .find({})
+            .project({ memberEmail: 1 })
+            .toArray();
+          const uniqueEmails = [
+            ...new Set(allBookings.map((b) => b.memberEmail)),
+          ];
+          const paidMembersCount = uniqueEmails.length;
+
+          res.send({
+            subscribersCount,
+            paidMembersCount,
+          });
+        } catch (error) {
+          console.error("Error fetching chart data:", error);
+          res.status(500).send({ error: "Failed to fetch chart data" });
+        }
+      }
+    );
+
     app.post("/subscribes", async (req, res) => {
       const { email, name } = req.body;
       const existing = await subscribesCollection.findOne({ email });
@@ -940,34 +969,39 @@ async function run() {
       }
     });
 
-    app.get("/admin/balance-overview", async (req, res) => {
-      try {
-        const totalBalancePipeline = [
-          {
-            $group: {
-              _id: null,
-              total: { $sum: "$amountPaid" },
+    app.get(
+      "/admin/balance-overview",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const totalBalancePipeline = [
+            {
+              $group: {
+                _id: null,
+                total: { $sum: "$amountPaid" },
+              },
             },
-          },
-        ];
+          ];
 
-        const [totalResult] = await bookingsCollection
-          .aggregate(totalBalancePipeline)
-          .toArray();
-        const totalBalance = totalResult?.total || 0;
+          const [totalResult] = await bookingsCollection
+            .aggregate(totalBalancePipeline)
+            .toArray();
+          const totalBalance = totalResult?.total || 0;
 
-        const lastPayments = await bookingsCollection
-          .find()
-          .sort({ paymentTime: -1 })
-          .limit(6)
-          .toArray();
+          const lastPayments = await bookingsCollection
+            .find()
+            .sort({ paymentTime: -1 })
+            .limit(6)
+            .toArray();
 
-        res.send({ totalBalance, lastPayments });
-      } catch (error) {
-        console.error("Failed to fetch balance overview", error);
-        res.status(500).send({ message: "Internal server error" });
+          res.send({ totalBalance, lastPayments });
+        } catch (error) {
+          console.error("Failed to fetch balance overview", error);
+          res.status(500).send({ message: "Internal server error" });
+        }
       }
-    });
+    );
 
     // review releted api.
     app.get("/review", async (req, res) => {
