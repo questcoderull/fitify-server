@@ -104,19 +104,54 @@ async function run() {
     });
 
     //get api for pagination
+    // app.get("/classes-with-pagination", async (req, res) => {
+    //   try {
+    //     const page = parseInt(req.query.page) || 1;
+    //     const limit = parseInt(req.query.limit) || 6;
+    //     const skip = (page - 1) * limit;
+
+    //     const result = await classesCollection
+    //       .find()
+    //       .skip(skip)
+    //       .limit(limit)
+    //       .toArray();
+
+    //     const total = await classesCollection.estimatedDocumentCount();
+
+    //     res.send({ result, total });
+    //   } catch (error) {
+    //     console.error("Failed to fetch classes:", error);
+    //     res.status(500).send({ message: "Failed to load classes" });
+    //   }
+    // });
+
     app.get("/classes-with-pagination", async (req, res) => {
       try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 6;
         const skip = (page - 1) * limit;
 
+        const search = req.query.search || "";
+        const category = req.query.category || "";
+
+        //  Search & filter query
+        const query = {};
+
+        if (search) {
+          query.className = { $regex: search, $options: "i" }; // Case-insensitive
+        }
+
+        if (category) {
+          query.category = category; // Exact match (you can also use regex if needed)
+        }
+
         const result = await classesCollection
-          .find()
+          .find(query)
           .skip(skip)
           .limit(limit)
           .toArray();
 
-        const total = await classesCollection.estimatedDocumentCount();
+        const total = await classesCollection.countDocuments(query);
 
         res.send({ result, total });
       } catch (error) {
