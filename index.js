@@ -940,8 +940,36 @@ async function run() {
       }
     });
 
-    // review releted api.
+    app.get("/admin/balance-overview", async (req, res) => {
+      try {
+        const totalBalancePipeline = [
+          {
+            $group: {
+              _id: null,
+              total: { $sum: "$amountPaid" },
+            },
+          },
+        ];
 
+        const [totalResult] = await bookingsCollection
+          .aggregate(totalBalancePipeline)
+          .toArray();
+        const totalBalance = totalResult?.total || 0;
+
+        const lastPayments = await bookingsCollection
+          .find()
+          .sort({ paymentTime: -1 })
+          .limit(6)
+          .toArray();
+
+        res.send({ totalBalance, lastPayments });
+      } catch (error) {
+        console.error("Failed to fetch balance overview", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    // review releted api.
     app.get("/review", async (req, res) => {
       const result = await reviewCollection
         .find()
