@@ -275,6 +275,16 @@ async function run() {
         }
       }
     );
+
+    app.get("/random-trainers", async (req, res) => {
+      const limit = parseInt(req.query.limit) || 3;
+      const result = await trainersCollection
+        .aggregate([{ $sample: { size: limit } }])
+        .toArray();
+
+      res.send(result);
+    });
+
     // Remove trainer role
     // app.patch("/trainers/remove-trainer/:id", async (req, res) => {
     //   const id = req.params.id;
