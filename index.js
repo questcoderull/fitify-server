@@ -787,6 +787,21 @@ async function run() {
       }
     });
 
+    //  Route to get latest community/forum posts
+    app.get("/latest-forums", async (req, res) => {
+      try {
+        const limit = parseInt(req.query.limit) || 6;
+        const result = await forumsCollection
+          .find()
+          .sort({ added_At: -1 })
+          .limit(limit)
+          .toArray();
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ error: "Failed to fetch latest forums" });
+      }
+    });
+
     app.post("/forums", async (req, res) => {
       try {
         const forumData = req.body;
