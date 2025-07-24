@@ -787,6 +787,12 @@ async function run() {
       }
     });
 
+    app.get("/forums/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await forumsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
     //  Route to get latest community/forum posts
     app.get("/latest-forums", async (req, res) => {
       try {
