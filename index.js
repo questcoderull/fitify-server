@@ -79,6 +79,18 @@ async function run() {
       next();
     };
 
+    const verifyTrainer = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+
+      if (!user || user.role !== "trainer") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      next();
+    };
+
     // Class releted apis
     // Get all classes
     app.get("/classes", async (req, res) => {
@@ -296,7 +308,7 @@ async function run() {
         }
         res.send(trainer);
       } catch (error) {
-        console.error("Error fetching trainer:", error);
+        // console.error("Error fetching trainer:", error);
         res.status(500).send({ message: "Internal server error" });
       }
     });
@@ -340,19 +352,29 @@ async function run() {
     });
 
     // Get single trainer by email
-    app.get("/trainers-with-email/:email", async (req, res) => {
-      const email = req.params.email;
-      try {
-        const trainer = await trainersCollection.findOne({ email });
-        if (!trainer) {
-          return res.status(404).send({ message: "Trainer not found" });
+    app.get(
+      "/trainers-with-email/:email",
+      verifyFBToken,
+      verifyTrainer,
+      async (req, res) => {
+        const email = req.params.email;
+        //checking the requiester is you,
+        if (req.decoded.email !== email) {
+          return res.status(403).send({ message: "forbidden access" });
         }
-        res.send(trainer);
-      } catch (error) {
-        console.error("Error fetching trainer by email:", error);
-        res.status(500).send({ message: "Server error" });
+
+        try {
+          const trainer = await trainersCollection.findOne({ email });
+          if (!trainer) {
+            return res.status(404).send({ message: "Trainer not found" });
+          }
+          res.send(trainer);
+        } catch (error) {
+          // console.error("Error fetching trainer by email:", error);
+          res.status(500).send({ message: "Server error" });
+        }
       }
-    });
+    );
 
     app.patch("/trainers/add-slot", async (req, res) => {
       const { email, newSlot } = req.body;
@@ -578,7 +600,7 @@ async function run() {
       const email = req.params.email;
       //checking the requiester is you,
       if (req.decoded.email !== email) {
-        return res.status(43).send({ message: "forbidden access" });
+        return res.status(403).send({ message: "forbidden access" });
       }
 
       const user = await usersCollection.findOne({ email });
@@ -807,16 +829,23 @@ async function run() {
     });
 
     // Get all bookings by trainerId
-    app.get("/bookings/trainer/:trainerId", async (req, res) => {
-      const trainerId = req.params.trainerId;
-      try {
-        const bookings = await bookingsCollection.find({ trainerId }).toArray();
-        res.send(bookings);
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-        res.status(500).send({ message: "Server error" });
+    app.get(
+      "/bookings/trainer/:trainerId",
+      verifyFBToken,
+      verifyTrainer,
+      async (req, res) => {
+        const trainerId = req.params.trainerId;
+        try {
+          const bookings = await bookingsCollection
+            .find({ trainerId })
+            .toArray();
+          res.send(bookings);
+        } catch (error) {
+          console.error("Error fetching bookings:", error);
+          res.status(500).send({ message: "Server error" });
+        }
       }
-    });
+    );
 
     //Pyment releted apis
     app.post("/create-payment-intent", async (req, res) => {
@@ -850,7 +879,7 @@ async function run() {
       try {
         const email = req.params.email;
         if (req.decoded.email !== email) {
-          return res.status(43).send({ message: "forbidden access" });
+          return res.status(403).send({ message: "forbidden access" });
         }
         const bookings = await bookingsCollection
           .find({ memberEmail: email })
