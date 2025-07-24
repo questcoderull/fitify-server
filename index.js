@@ -125,6 +125,22 @@ async function run() {
       }
     });
 
+    // GET top 6 featured classes based on bookedCount
+    app.get("/featured-classes", async (req, res) => {
+      try {
+        const result = await classesCollection
+          .find()
+          .sort({ bookedCount: -1 })
+          .limit(6)
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching featured classes:", error);
+        res.status(500).send({ message: "Failed to fetch featured classes" });
+      }
+    });
+
     app.get("/classes/matching/:email", async (req, res) => {
       try {
         const email = req.params.email;
