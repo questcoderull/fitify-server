@@ -1314,31 +1314,79 @@ async function run() {
     );
 
     // GET: all quotes (random 1 + recent 3 user submitted)
+    //failed to show today's post and classes
+    // app.get("/dashboard/member-stats", async (req, res) => {
+    //   try {
+    //     const today = new Date();
+    //     today.setHours(0, 0, 0, 0);
+
+    //     const [quote, todaysForums, todaysClasses] = await Promise.all([
+    //       quotesCollection.aggregate([{ $sample: { size: 1 } }]).toArray(),
+    //       forumsCollection
+    //         .find({ added_At: { $gte: today } })
+    //         .project({ title: 1 })
+    //         .toArray(),
+    //       classesCollection
+    //         .find({ added_At: { $gte: today } })
+    //         .project({ className: 1 })
+    //         .toArray(),
+    //     ]);
+
+    //     res.send({
+    //       quote: quote[0] || null,
+    //       todaysForums,
+    //       todaysClasses,
+    //     });
+    //   } catch (err) {
+    //     console.error("Member Dashboard Error", err);
+    //     res.status(500).send({ message: "Failed to load member dashboard" });
+    //   }
+    // });
+
     app.get("/dashboard/member-stats", async (req, res) => {
       try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const [quote, todaysForums, todaysClasses] = await Promise.all([
+        const [quote, recentForums, recentClasses] = await Promise.all([
           quotesCollection.aggregate([{ $sample: { size: 1 } }]).toArray(),
           forumsCollection
-            .find({ createdAt: { $gte: today } })
-            .project({ title: 1 })
+            .find({})
+            .sort({ added_At: -1 }) // newest first
+            .limit(3)
+            .project({ title: 1, added_At: 1 })
             .toArray(),
           classesCollection
-            .find({ createdAt: { $gte: today } })
-            .project({ className: 1 })
+            .find({})
+            .sort({ added_At: -1 }) // newest first
+            .limit(3)
+            .project({ className: 1, added_At: 1 })
             .toArray(),
         ]);
 
         res.send({
           quote: quote[0] || null,
-          todaysForums,
-          todaysClasses,
+          recentForums,
+          recentClasses,
         });
       } catch (err) {
         console.error("Member Dashboard Error", err);
         res.status(500).send({ message: "Failed to load member dashboard" });
+      }
+    });
+
+    // POST: Allow member to submit a quote
+    app.post("/quotes", async (req, res) => {
+      try {
+        const { quote, authorName, authorPhoto } = req.body;
+        const result = await quotesCollection.insertOne({
+          quote,
+          authorName,
+          authorPhoto,
+          userSubmitted: true,
+          submittedAt: new Date(),
+        });
+        res.send(result);
+      } catch (err) {
+        console.error("Quote Submission Error", err);
+        res.status(500).send({ message: "Failed to submit quote" });
       }
     });
 
