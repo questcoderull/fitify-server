@@ -1053,6 +1053,155 @@ async function run() {
       res.send(result);
     });
 
+    // admin dashboard relted api
+    //  routes/dashboardStats.js
+    app.get(
+      "/dashboard/admin-stats",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const [
+            totalTrainers,
+            approvedTrainers,
+            pendingTrainers,
+            rejectedTrainers,
+            totalMembers,
+            totalClasses,
+            totalForums,
+            adminForums,
+            trainerForums,
+            topVotedForums,
+            totalBookings,
+            topBookedClasses,
+            topBookedTrainers,
+            totalPayments,
+            todaysPayments,
+            totalSubscribers,
+            totalUsers,
+            recentPayments,
+            recentUsers,
+            recentTrainers,
+          ] = await Promise.all([
+            trainersCollection.countDocuments(),
+            trainersCollection.countDocuments({
+              application_status: "approved",
+            }),
+            trainersCollection.countDocuments({
+              application_status: "pending",
+            }),
+            trainersCollection.countDocuments({
+              application_status: "rejected",
+            }),
+            usersCollection.countDocuments({ role: "member" }),
+            classesCollection.countDocuments(),
+            forumsCollection.countDocuments(),
+            forumsCollection.countDocuments({ role: "admin" }),
+            forumsCollection.countDocuments({ role: "trainer" }),
+            forumsCollection.find().sort({ upVotes: -1 }).limit(3).toArray(),
+
+            bookingsCollection.countDocuments(),
+            classesCollection
+              .find()
+              .sort({ bookedCount: -1 })
+              .limit(3)
+              .toArray(),
+            bookingsCollection
+              .aggregate([
+                {
+                  $group: {
+                    _id: "$trainerEmail",
+                    count: { $sum: 1 },
+                    trainerName: { $first: "$trainerName" },
+                  },
+                },
+                { $sort: { count: -1 } },
+                { $limit: 3 },
+              ])
+              .toArray(),
+
+            paymentsCollection
+              .aggregate([
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ])
+              .toArray(),
+            paymentsCollection
+              .aggregate([
+                {
+                  $match: {
+                    paymented_at: {
+                      $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+                    },
+                  },
+                },
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ])
+              .toArray(),
+
+            subscribesCollection.countDocuments(),
+            usersCollection.countDocuments(),
+
+            paymentsCollection
+              .find()
+              .sort({ paymented_at: -1 })
+              .limit(5)
+              .toArray(),
+            usersCollection
+              .find()
+              .sort({ subscribed_At: -1 })
+              .limit(5)
+              .toArray(),
+            trainersCollection
+              .find()
+              .sort({ joined_At: -1 })
+              .limit(5)
+              .toArray(),
+          ]);
+
+          res.send({
+            summary: {
+              totalTrainers,
+              totalMembers,
+              totalClasses,
+              totalForums,
+              totalBookings,
+              totalIncome: totalPayments[0]?.total || 0,
+              todayIncome: todaysPayments[0]?.total || 0,
+              totalSubscribers,
+              totalUsers,
+            },
+            trainerStatus: {
+              approved: approvedTrainers,
+              pending: pendingTrainers,
+              rejected: rejectedTrainers,
+            },
+            forumStats: {
+              total: totalForums,
+              admin: adminForums,
+              trainer: trainerForums,
+              top: topVotedForums || [],
+            },
+            classStats: {
+              mostBooked: topBookedClasses || [],
+            },
+            trainerStats: {
+              topTrainer: topBookedTrainers || [],
+            },
+            recentActivity: {
+              payments: recentPayments,
+              users: recentUsers,
+              trainers: recentTrainers,
+            },
+          });
+        } catch (err) {
+          console.error("Admin Dashboard Error", err);
+          res
+            .status(500)
+            .send({ message: "Failed to load admin dashboard data" });
+        }
+      }
+    );
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
