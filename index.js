@@ -806,7 +806,7 @@ async function run() {
             return res.status(403).json({
               success: false,
               message:
-                "You can't remove this admin. You are not the main admin.",
+                "You can't remove this admin. You are not the main admin. only Main Admin can remove another admin",
             });
           }
 
@@ -829,7 +829,7 @@ async function run() {
             message: "Admin removed successfully.",
           });
         } catch (error) {
-          console.error("Error removing admin:", error.message);
+          // console.error("Error removing admin:", error.message);
           res.status(500).json({
             success: false,
             message: "Server error while removing admin.",
