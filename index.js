@@ -47,6 +47,7 @@ async function run() {
     const bookingsCollection = client.db("fitifyDB").collection("bookings");
     const paymentsCollection = client.db("fitifyDB").collection("payments");
     const reviewCollection = client.db("fitifyDB").collection("review");
+    const quotesCollection = client.db("fitifyDB").collection("quote");
 
     // custom middlewares
     const verifyFBToken = async (req, res, next) => {
@@ -1311,6 +1312,35 @@ async function run() {
         }
       }
     );
+
+    // GET: all quotes (random 1 + recent 3 user submitted)
+    app.get("/dashboard/member-stats", async (req, res) => {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const [quote, todaysForums, todaysClasses] = await Promise.all([
+          quotesCollection.aggregate([{ $sample: { size: 1 } }]).toArray(),
+          forumsCollection
+            .find({ createdAt: { $gte: today } })
+            .project({ title: 1 })
+            .toArray(),
+          classesCollection
+            .find({ createdAt: { $gte: today } })
+            .project({ className: 1 })
+            .toArray(),
+        ]);
+
+        res.send({
+          quote: quote[0] || null,
+          todaysForums,
+          todaysClasses,
+        });
+      } catch (err) {
+        console.error("Member Dashboard Error", err);
+        res.status(500).send({ message: "Failed to load member dashboard" });
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
