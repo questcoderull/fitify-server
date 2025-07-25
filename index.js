@@ -1054,7 +1054,6 @@ async function run() {
     });
 
     // admin dashboard relted api
-    //  routes/dashboardStats.js
     app.get(
       "/dashboard/admin-stats",
       verifyFBToken,
@@ -1198,6 +1197,117 @@ async function run() {
           res
             .status(500)
             .send({ message: "Failed to load admin dashboard data" });
+        }
+      }
+    );
+
+    //trainer dashboard relted api
+    app.get(
+      "/api/dashboard/trainer-stats",
+      verifyFBToken,
+      verifyTrainer,
+      async (req, res) => {
+        try {
+          const email = req.query.email;
+
+          // Load trainer info
+          const trainer = await trainersCollection.findOne({ email });
+          if (!trainer) {
+            return res.status(404).send({ message: "Trainer not found" });
+          }
+
+          const trainerId = trainer._id.toString();
+          const expertise = trainer.expertise || [];
+
+          const [
+            totalSlotsCreated,
+            totalSlotsBooked,
+            totalEarnings,
+            totalReviews,
+            averageRating,
+            latestReviews,
+            recentBookings,
+            upcomingSlots,
+            slotBookingStats,
+            relatedClasses,
+          ] = await Promise.all([
+            trainer.structuredSlots?.reduce(
+              (total, day) =>
+                total + day.slots?.reduce((sum, s) => sum + s.times.length, 0),
+              0
+            ) || 0,
+
+            bookingsCollection.countDocuments({ trainerEmail: email }),
+            paymentsCollection
+              .aggregate([
+                { $match: { trainerEmail: email } },
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ])
+              .toArray(),
+            reviewCollection.countDocuments({ trainerId }),
+
+            reviewCollection
+              .aggregate([
+                { $match: { trainerId } },
+                { $group: { _id: null, avgRating: { $avg: "$rating" } } },
+              ])
+              .toArray(),
+            reviewCollection
+              .find({ trainerId })
+              .sort({ reviewed_at: -1 })
+              .limit(3)
+              .toArray(),
+
+            bookingsCollection
+              .find({ trainerEmail: email })
+              .sort({ paymented_at: -1 })
+              .limit(5)
+              .toArray(),
+
+            trainer.structuredSlots?.map((day) => ({
+              day: day.day,
+              slots: day.slots.map((s) => ({ label: s.label, times: s.times })),
+            })) || [],
+
+            bookingsCollection
+              .aggregate([
+                { $match: { trainerEmail: email } },
+                {
+                  $group: {
+                    _id: "$time",
+                    count: { $sum: 1 },
+                  },
+                },
+                { $sort: { count: -1 } },
+                { $limit: 1 },
+              ])
+              .toArray(),
+
+            classesCollection
+              .find({ category: { $in: expertise } })
+              .limit(5)
+              .toArray(),
+          ]);
+
+          res.send({
+            stats: {
+              totalSlotsCreated,
+              totalSlotsBooked,
+              totalEarnings: totalEarnings[0]?.total || 0,
+              totalReviews,
+              averageRating: averageRating[0]?.avgRating || 0,
+            },
+            upcomingSlots,
+            topSlot: slotBookingStats[0] || {},
+            recentBookings,
+            latestReviews,
+            relatedClasses,
+          });
+        } catch (err) {
+          console.error("Trainer Dashboard Error", err);
+          res
+            .status(500)
+            .send({ message: "Failed to load trainer dashboard data" });
         }
       }
     );
