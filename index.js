@@ -752,33 +752,91 @@ async function run() {
     });
 
     // Remove admin
-    app.patch("/users/remove-admin/:id", async (req, res) => {
-      try {
-        const targetId = req.params.id;
-        const requesterEmail = req.user.email;
-        const requester = await usersCollection.findOne(
-          { email: requesterEmail },
-          { projection: { isMainAdmin: 1 } }
-        );
-        if (!requester || requester.isMainAdmin !== true) {
-          return res.status(403).send({
+    // app.patch(
+    //   "/users/remove-admin/:id",
+    //   verifyFBToken,
+    //   verifyAdmin,
+    //   async (req, res) => {
+    //     try {
+    //       const targetId = req.params.id;
+    //       const requesterEmail = req.user.email;
+    //       const requester = await usersCollection.findOne(
+    //         { email: requesterEmail },
+    //         { projection: { isMainAdmin: 1 } }
+    //       );
+    //       if (!requester || requester.isMainAdmin !== true) {
+    //         return res.status(403).send({
+    //           success: false,
+    //           message:
+    //             "You can't remove this admin. You are not the main admin.",
+    //         });
+    //       }
+    //       const result = await usersCollection.updateOne(
+    //         { _id: new ObjectId(targetId) },
+    //         { $set: { role: "member" } }
+    //       );
+
+    //       res.send({ success: true, result });
+    //     } catch (error) {
+    //       res.status(500).send({
+    //         success: false,
+    //         message: "Server error while removing admin",
+    //       });
+    //     }
+    //   }
+    // );
+
+    app.patch(
+      "/users/remove-admin/:id",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        try {
+          const targetId = req.params.id;
+          const requesterEmail = req.decoded.email;
+
+          // khuje ber korchi ke request koreche
+          const requester = await usersCollection.findOne(
+            { email: requesterEmail },
+            { projection: { isMainAdmin: 1 } }
+          );
+
+          // requeter main admin na hole remvoe korthe parbe na.
+          if (!requester || requester.isMainAdmin !== true) {
+            return res.status(403).json({
+              success: false,
+              message:
+                "You can't remove this admin. You are not the main admin.",
+            });
+          }
+
+          // ekhon main admin hole remove koro
+          const result = await usersCollection.updateOne(
+            { _id: new ObjectId(targetId), role: "admin" },
+            { $set: { role: "member" } }
+          );
+
+          // jodi kichu gorbor hoy, id ba role jodi na mile.
+          if (result.modifiedCount === 0) {
+            return res.status(404).json({
+              success: false,
+              message: "Admin not found or already removed.",
+            });
+          }
+
+          res.send({
+            success: true,
+            message: "Admin removed successfully.",
+          });
+        } catch (error) {
+          console.error("Error removing admin:", error.message);
+          res.status(500).json({
             success: false,
-            message: "You can't remove this admin. You are not the main admin.",
+            message: "Server error while removing admin.",
           });
         }
-        const result = await usersCollection.updateOne(
-          { _id: new ObjectId(targetId) },
-          { $set: { role: "member" } }
-        );
-
-        res.send({ success: true, result });
-      } catch (error) {
-        res.status(500).send({
-          success: false,
-          message: "Server error while removing admin",
-        });
       }
-    });
+    );
 
     // subscribe releted apis.
     app.get("/subscribes", verifyFBToken, verifyAdmin, async (req, res) => {
