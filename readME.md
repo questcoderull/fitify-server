@@ -2,7 +2,8 @@
 Welcome to the backend of the Fitify Fitness Tracker Web App!
 This backend is built with Node.js, Express.js, and MongoDB, and handles all REST APIs, authentication, role management, Stripe payments, and more.
 
-🔗 Live Backend URL: https://fitify-backend.vercel.app
+🔗 Live Backend URL: https://fitify-server.vercel.app
+
 💻 Frontend Repo: [Fitify Frontend](https://github.com/Programming-Hero-Web-Course4/b11a12-client-side-questcoderull)
 
 ⚙️ Tech Stack
@@ -101,6 +102,39 @@ Method Endpoint Description
 - POST /forums Create new forum post
 - PATCH /forums/:id/upvote Upvote a post
 - PATCH /forums/:id/downvote Downvote a post
+
+📊 Dashboard
+Admin dashboard
+
+- Shows total trainers, members, users, bookings, income
+
+- Trainer status: approved, pending, rejected
+
+- Top booked classes & trainers
+
+- Top forum posts (by upvotes)
+
+- Recent payments, users, trainers
+
+Trainer dashboard
+
+- Slots created/booked, total earnings
+
+- Average rating, total reviews
+
+- Recent bookings & reviews
+
+- Top time slot
+
+- Recommended classes
+
+Member dashboard
+
+- Random quote
+
+- Latest forums (3)
+
+- Latest classes (3)
 
 🙌 Credits
 Made with ❤️ by Rejaul Karim
