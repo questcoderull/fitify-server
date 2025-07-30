@@ -2,8 +2,8 @@
 Welcome to the backend of the Fitify Fitness Tracker Web App!
 This backend is built with Node.js, Express.js, and MongoDB, and handles all REST APIs, authentication, role management, Stripe payments, and more.
 
-🔗 Live Backend URL (if deployed): https://fitify-backend.vercel.app
-💻 Frontend Repo: Fitify Frontend
+🔗 Live Backend URL: https://fitify-backend.vercel.app
+💻 Frontend Repo: [Fitify Frontend](https://github.com/Programming-Hero-Web-Course4/b11a12-client-side-questcoderull)
 
 ⚙️ Tech Stack
 
@@ -105,4 +105,4 @@ Method Endpoint Description
 🙌 Credits
 Made with ❤️ by Rejaul Karim
 📧 Email: questcoderull@gmail.com
-🌐 Portfolio: GitHub - questcoderull
+🌐 Portfolio: [GitHub - questcoderull](https://github.com/questcoderull)

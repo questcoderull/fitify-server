@@ -806,7 +806,7 @@ async function run() {
             return res.status(403).json({
               success: false,
               message:
-                "You can't remove this admin. You are not the main admin. only Main Admin can remove another admin",
+                "You can't remove this admin. You are not the main admin. only Main Admin can remove another admin.",
             });
           }
 
