@@ -1376,33 +1376,38 @@ async function run() {
 
     // GET: all quotes (random 1 + recent 3 user submitted)
     //failed to show today's post and classes
-    // app.get("/dashboard/member-stats", async (req, res) => {
-    //   try {
-    //     const today = new Date();
-    //     today.setHours(0, 0, 0, 0);
+    app.get("/dashboard/member-stats", async (req, res) => {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startId = ObjectId.createFromTime(
+          Math.floor(today.getTime() / 1000)
+        );
 
-    //     const [quote, todaysForums, todaysClasses] = await Promise.all([
-    //       quotesCollection.aggregate([{ $sample: { size: 1 } }]).toArray(),
-    //       forumsCollection
-    //         .find({ added_At: { $gte: today } })
-    //         .project({ title: 1 })
-    //         .toArray(),
-    //       classesCollection
-    //         .find({ added_At: { $gte: today } })
-    //         .project({ className: 1 })
-    //         .toArray(),
-    //     ]);
+        const [quote, todaysForums, todaysClasses] = await Promise.all([
+          quotesCollection.aggregate([{ $sample: { size: 1 } }]).toArray(),
+          forumsCollection
+            .find({ _id: { $gte: startId } })
+            .sort({ _id: -1 })
+            .project({ title: 1 })
+            .toArray(),
+          classesCollection
+            .find({ _id: { $gte: startId } })
+            .sort({ _id: -1 })
+            .project({ className: 1 })
+            .toArray(),
+        ]);
 
-    //     res.send({
-    //       quote: quote[0] || null,
-    //       todaysForums,
-    //       todaysClasses,
-    //     });
-    //   } catch (err) {
-    //     console.error("Member Dashboard Error", err);
-    //     res.status(500).send({ message: "Failed to load member dashboard" });
-    //   }
-    // });
+        res.send({
+          quote: quote[0] || null,
+          todaysForums,
+          todaysClasses,
+        });
+      } catch (err) {
+        // console.error("Member Dashboard Error", err);
+        res.status(500).send({ message: "Failed to load member dashboard" });
+      }
+    });
 
     app.get("/dashboard/member-stats", verifyFBToken, async (req, res) => {
       try {
